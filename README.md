@@ -84,3 +84,4 @@ Due to time constraints, many features haven't been (fully) developed or are und
 
 * Persistent memory: better design and implementation. Currently it's more of a mock implementation and I'm too time constrained to make meaningful progress before the submission.
 * add and subtract logic for pantry, rather than simple setting, needs to be added for it to work properly
+* The Store Finder sub-agent should possibly be converted into an Agent-as-a-tool or even just a tool.
