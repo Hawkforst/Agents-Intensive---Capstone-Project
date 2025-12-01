@@ -9,7 +9,7 @@ Category 1: The Pitch (Problem, Solution, Value)
 
 ## Problem:
 
-The need to buy, cook and eat food is one of the few things that connects all 8.2 billion people living on Earth. Many of these people - especially in EU and NA increasingly want to not only eat something but rather eat high quality, nutritious and balanced diet, while also navigating numerous supermarket offers, time-limited discounts and, ultimately, saving money.
+The need to buy, cook and eat food is one of the few things that connects all 8.2 billion people living on Earth. Many of these people increasingly want to not only eat something but rather eat high quality, nutritious and balanced diet, while also navigating numerous supermarket offers, time-limited discounts and, ultimately, saving money.
 
 That requires careful planning, which takes a lot of time many people do not have. This makes it a perfect use-case for an agentic system.
 
