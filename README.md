@@ -68,6 +68,7 @@ C) Around 10-20% groceries cost reduction.
 | user_preferences | Read and write relevant user preferences into persistent memory | Custom - interfaces persistent memory | 
 | food_storage    | Read and write food in user's pantry | Custom - interfaces persistnet memory |
 | recipe_book    | Finds recipes based on keywords provided | Custom - interfaces a recipe database via API | 
+| supermarket_api_tools | Interfaces APIs for different shops to streamline their use by (sub)agents | Custom - interfaces shop APIs | 
 | maps_toolset    | Finds stores near user's address | MCPToolset tool set |
 
 **Plugins** :
