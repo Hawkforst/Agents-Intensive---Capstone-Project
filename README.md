@@ -67,7 +67,11 @@ C) Around 10-20% groceries cost reduction.
 | recipe_book    | Finds recipes based on keywords provided | Custom - interfaces a recipe database via API | 
 | maps_toolset    | Finds stores near user's address | MCPToolset tool set |
 
+**Plugins** :
 
+| Plugin    | Purpose | 
+| -------- | ------- |
+| ReflectAndRetryToolPlugin  | Use this built-in plugin to handle, reflec-upon and hopefully fix issues
 
 
 
