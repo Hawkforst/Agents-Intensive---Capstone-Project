@@ -77,6 +77,33 @@ C) Around 10-20% groceries cost reduction.
 | ReflectAndRetryToolPlugin  | Use this built-in plugin to handle, reflec-upon and hopefully fix issues
 
 
+#Architecture: an overview of my design reasoning
+
+I have opted for an architecture relying on one orchestrator agent and 4 sub-agents equipped with a number of tools. 
+
+1. The root agent - Meal Orchestrator:
+The Meal Orchestrator is responsible for communicating with the client and orchestrating general flow. It should first figure out what the user wants - this is done by direct communication and via persistent memory tools, which serve to retrieve user dietary preferences and needs, as well as their food storage at home. 
+After that, it orchestrates the workflow given in its instructions. I opted for somewhat restrictive instructions with points based workflow to prevent the Agent getting sidetracked or not using individual sub-agents for their intended tasks. 
+Due to the orchestration nature of this agent, it does not have to be as powerful as the Meal Planner  agent, which does more complex reasoning. Hence, faster and less expensive agent size can be used. (although this would need to be calibrated and tested in a production deployment scenario).
+The Meal Orchestrator is also equipped with the ReflectAndRetryToolPlugin plugin with the aim to add robustness to the agentic system.
+
+2. First sub-agent - Meal Planner:
+This agent does the heavy-lifting in terms of reasoning. It works with the context built up by the Meal Orchestrator and its interaction with the user. This is also the reason I opted for the sub-agent type for this agent, rather than Agent-as-tool one. It's tasked with taking user preferences and goals (e.g. bulking, 3500 kcal maintenance, loves chicken, cooks only breakfast and dinner) into a meal plan. For this task, it has been equipped with a Recipe book tool (which is just a mock tool in this submission due to time constraints) and is tasked to find recipes there. This aims to provide coherence and quality to the meals offered. it is also tasked to suggest recipes where the user already has some ingredients at home. Furthermore, Google Search tool is also added to enhance its capabilities to provide good quality meals as well as adapt to specific needs where the Recipe Book might not suffice. 
+
+3. Second sub-agent - Ingredient Aggregator:
+The Ingredient Aggregator is a somewhat simpler agent where the design decision to make it a sub-agent, as opposed to agent-as-a-tool, is slightly more questionable. Nevertheless, I opted for the sub-agent architecture as context might be important in some instances, e.g. the user is following a gluten-free diet, and similar edge-cases might be difficult to handle using only agent-as-a-tool.  It is further tasked with subtracting ingredients the user already has at home.
+Its role is to take the meal plan and convert it into a list of individual ingredients. It is again equipped with several tools to help it stay coherent and accurate. 
+
+4. Third sub-agent - Store Finder
+This is the smallest sub-agent. Its task is to use map APIs to search for stores near user's address. I opted for a smaller, cheaper model to use for this sub-agent. Other valid solutions might be to convert it into an agent-as-a-tool or write a tool that other agents call - likely to be used by the Store Buyer sub-agent. 
+
+5. Fourth sub-agent - Store Buyer
+The Store Buyer is a sub-agent that takes the ingredient list within the agent context (note: this might be a design flaw and it might be better for the Ingredient Aggregator to save the ingredient list into the InMemorySessionService to enhance robustness) as well as the list of nearest stores (again, InMemorySessionService would likely be more robust). It is equipped with a Store APIs tool, as well as Google Search, which helps it retrieve prices of individual ingredient items at nearby stores. It is tasked with aggregating the ingredient list and calculating total prices. 
+
+6. Meal Orchestrator Output
+The Meal Orchestrator gives the user a shopping list, the name of the cheapest nearby store and the total price. The user is then allowed to respond, possibly rejecting or asking the agent to re-do certain parts of the process.
+
+
 
 # Flaws and future improvements
 Due to time constraints, many features haven't been (fully) developed or are underdeveloped. This section's purpose is to keep a TO-DO list of these flaws and highlight that I'm aware of these issues but haven't had the time to address everything:
