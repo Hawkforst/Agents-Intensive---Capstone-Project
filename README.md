@@ -1,6 +1,9 @@
 # Agents Intensive Course Capstone Project: ShopAIholic
 This is a respository for my 5-Day AI Agents Intensive Course with Google 2025 final project submission.
 
+ShopAIholic - a smart assistent that helps you plan your shopping the way YOU want it. Help you reach your goals and save money and time!
+<img width="2327" height="733" alt="image" src="https://github.com/user-attachments/assets/e6ff3e3a-709f-4eb1-b41b-6cad4b010006" />
+
 
 Category 1: The Pitch (Problem, Solution, Value)
 
