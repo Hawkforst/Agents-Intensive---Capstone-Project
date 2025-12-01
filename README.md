@@ -19,7 +19,7 @@ That requires careful planning, which takes a lot of time many people do not hav
 
 ShopAIholic is a multi-agent system that helps users create their shopping lists and finds the cheapest nearby supermarket to buy everything they need.
 
-It does so by engaging directly with the user to discover - and remember through multiple sessions - their dietary goals, such as saving as much money as possible, gaining lean muscle, increasing their longevity or simply eating tasty food. Furthermore, it keeps track of user's food storage and verifies with the user by providing them with a list of foods and quantities they're supposed to have at home and updating its persistent memory based on new information. This behaviour is fully optional and the user is asked if they'd like to engage with the food storage memory feature.
+It does so by engaging directly with the user to discover - and remember through multiple sessions - their dietary goals, such as saving as much money as possible, gaining lean muscle, increasing their longevity or simply eating tasty food. Furthermore, it keeps track of user's food storage to reduce waste.
 
 Once user's dietary goals are established, it uses its Meal Planner sub-agent to derive a meal plan that matches users' goals. An overview of this plan is first presented to the user and changes are made based on feedback (e.g. "I don't like broccoli", which results in removal of broccoli meals as well as addition of this preference into persistent memory). This sub-agent is equipped with a recipe book API tool and Google search, which allows it to select tasty meals, which also follow dietary trends (since Google search is included).
 
