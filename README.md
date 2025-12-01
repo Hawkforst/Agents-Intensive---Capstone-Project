@@ -73,3 +73,6 @@ C) Around 10-20% groceries cost reduction.
 
 # Flaws and future improvements
 Due to time constraints, many features haven't been (fully) developed or are underdeveloped. This section's purpose is to keep a TO-DO list of these flaws and highlight that I'm aware of these issues but haven't had the time to address everything:
+
+
+* Persistent memory: better design and implementation. Currently it's more of a mock implementation and I'm too time constrained to make meaningful progress before the submission.
