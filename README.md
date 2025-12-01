@@ -77,7 +77,7 @@ C) Around 10-20% groceries cost reduction.
 | ReflectAndRetryToolPlugin  | Use this built-in plugin to handle, reflec-upon and hopefully fix issues
 
 
-#Architecture: an overview of my design reasoning
+# Architecture: an overview of my design reasoning
 
 I have opted for an architecture relying on one orchestrator agent and 4 sub-agents equipped with a number of tools. 
 
