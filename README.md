@@ -44,7 +44,7 @@ C) Around 10-20% groceries cost reduction.
 
 # Architecture overview:
 
-<img width="4699" height="2410" alt="image" src="https://github.com/user-attachments/assets/8e2a8782-1ef2-44b4-8011-0cdd388051c2" />
+<img width="4756" height="2410" alt="image" src="https://github.com/user-attachments/assets/79e9c0b8-b88e-4140-9a8e-c482bce40ff3" />
 
 **Agents** :
 
