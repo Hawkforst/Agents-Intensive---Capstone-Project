@@ -57,7 +57,7 @@ C) Around 10-20% groceries cost reduction.
 | Root Agent  | Coordinates main workflow, talks to client| Agent | gemini-2.5-flash | Fast response needed, needs to understand but no complex reasoning needed |
 | Meal Planner | Designs meal plans, works as a nutritionist | Sub-agent | gemini-2.5-pro | Deeper reasoning required to create high quality meal plans |
 | Ingredient Aggregator    | Calculates individual ingredient amounts| Sub-agent |gemini-2.5-flash | Only basic reasoning needed to aggregate ingredients from recipes |
-| Store Finder    | Finds nearby stores |Sub-agent| gemini-2.5-flash-lite | Only an API-called, no big reasoning capacity needed. |
+| Store Finder    | Finds nearby stores |Sub-agent| gemini-2.5-flash-lite | Only an API-caller, no big reasoning capacity needed. |
 | Store Buyer    | Finds out total cost in each nearby store |Sub-agent| gemini-2.5-flash | Basic mathematics needed and tool use needed. |
 
 **Tools** :
