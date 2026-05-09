@@ -2,6 +2,7 @@
 
 Modes:
   Gemini (default):  .venv/bin/python scripts/smoke_test.py
+  Groq (cloud):      .venv/bin/python scripts/smoke_test.py --groq
   Local Ollama:      .venv/bin/python scripts/smoke_test.py --local
 
 Streams every agent event to stdout as it arrives, with timestamps.
@@ -46,11 +47,19 @@ def _log(start: float, msg: str, *, end: str = "\n") -> None:
 
 async def main() -> None:
     local_mode = "--local" in sys.argv
+    groq_mode = "--groq" in sys.argv
     start = time.monotonic()
 
-    _log(start, f"Mode: {'Local Ollama' if local_mode else 'Gemini'}")
+    if groq_mode:
+        mode_label = "Groq"
+    elif local_mode:
+        mode_label = "Local Ollama"
+    else:
+        mode_label = "Gemini"
+
+    _log(start, f"Mode: {mode_label}")
     _log(start, "Building runner ...")
-    runner = _build_runner(local=local_mode)
+    runner = _build_runner(local=local_mode, groq=groq_mode)
 
     _log(start, "Creating session ...")
     await runner.session_service.create_session(

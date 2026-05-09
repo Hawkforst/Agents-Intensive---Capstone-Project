@@ -11,16 +11,18 @@ from shopaiholic.tools import (
     save_recipe,
     user_preferences,
 )
-from shopaiholic.agents.meal_planner import meal_planner
-from shopaiholic.agents.store_finder import store_finder
+from shopaiholic.agents.meal_planner import meal_planner as _meal_planner_agent
+from shopaiholic.agents.store_finder import store_finder as _store_finder_agent
 
 
 # AgentTools wrap genuinely fuzzy sub-agents. The orchestrator stays in
 # control: it gathers candidate recipes via recipe_book first, then asks
 # meal_planner to pick from them. meal_planner has no tools (output_schema
 # and tools are mutually exclusive in Gemini's API).
-plan_meals = AgentTool(agent=meal_planner)
-find_stores = AgentTool(agent=store_finder)
+# NOTE: AgentTool inherits the agent's name, so the LLM sees these tools
+# as "meal_planner" and "store_finder" (not the variable name on this side).
+meal_planner_tool = AgentTool(agent=_meal_planner_agent)
+store_finder_tool = AgentTool(agent=_store_finder_agent)
 
 
 root_agent = LlmAgent(
@@ -53,14 +55,19 @@ STEP 3 — Gather candidate recipes
     id you can reference downstream.
 
 STEP 4 — Plan meals
-  - Call plan_meals(request=...) where `request` is a clear natural-language
+  - Call meal_planner(request=...) where `request` is a clear natural-language
     summary that includes:
       * the user's preferences (days, meals at home, goal, calories, allergies, likes)
       * the pantry items already at home
-      * the FULL list of candidate recipes you gathered in STEP 3 (id, name,
-        ingredients, tags, user_affinity)
+      * the FULL list of candidate recipes — each formatted EXACTLY as:
+          [id: <recipe_id>] <name> | ingredients: <list> | affinity: <user_affinity>
+        For example:
+          [id: r001] Spicy Chicken Breasts with Rice and Broccoli | ingredients: 150g chicken breast, 80g rice, 250g broccoli | affinity: liked
+          [id: r010] Steak with Roasted Vegetables | ingredients: 200g ribeye steak, 300g mixed vegetables | affinity: loved
+        meal_planner MUST use the exact id strings (e.g. "r001", "r010") as recipe_id.
+        NEVER use the recipe name as the recipe_id.
   - Show the returned meal plan to the user in readable form. If they request
-    changes, gather different candidates and call plan_meals again.
+    changes, gather different candidates and call meal_planner again.
 
 STEP 5 — Shopping list (deterministic)
   - Call aggregate_shopping_list() with no arguments. It reads the meal plan,
@@ -68,9 +75,14 @@ STEP 5 — Shopping list (deterministic)
   - Show the shopping_list. If skipped_for_allergy is non-empty, flag it.
     If missing_recipe_ids is non-empty, return to STEP 3.
 
-STEP 6 — Stores and prices
-  - Call find_stores(request="find supermarkets near the user").
-  - Then call compute_cheapest_store() with no arguments.
+STEP 6 — Stores and prices (TWO calls, in this order, NEVER skip the first)
+  6a. FIRST call store_finder(request="find supermarkets near the user").
+      You MUST do this before STEP 6b. store_finder writes the store list to
+      session state; without it the next step has no input.
+  6b. THEN call compute_cheapest_store() with no arguments.
+      It reads the shopping list and stores from state and returns the result.
+  - If compute_cheapest_store returns cheapest_store == null, that means store_finder
+    was not called or failed — go back to 6a.
   - Present the result like this:
 
         Shop: <name>, <address>
@@ -94,9 +106,9 @@ RULES:
         food_storage,
         recipe_book,
         save_recipe,
-        plan_meals,
+        meal_planner_tool,
         aggregate_shopping_list,
-        find_stores,
+        store_finder_tool,
         compute_cheapest_store,
     ],
 )
