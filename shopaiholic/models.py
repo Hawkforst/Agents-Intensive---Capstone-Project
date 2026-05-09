@@ -25,17 +25,21 @@ class Ingredient(BaseModel):
 # ---------------------------------------------------------------------------
 
 class MealReference(BaseModel):
-    """A single meal slot pointing to a known recipe."""
-    name: str = Field(description="Recipe display name, e.g. 'Spicy Chicken with Rice'")
-    recipe_id: str = Field(description="ID of the recipe in recipe_book or downloaded_recipes")
+    """A single meal slot pointing to a known recipe.
+
+    Empty values (name="" and recipe_id="") mean the user does not cook
+    this slot. The aggregator skips entries with empty recipe_id.
+    """
+    name: str = Field(default="", description="Recipe display name, or empty string if the user does not cook this slot")
+    recipe_id: str = Field(default="", description="ID of the recipe in recipe_book or downloaded_recipes, or empty string to skip this slot")
 
 
 class DayPlan(BaseModel):
     day: int = Field(description="Day number, e.g. 1 for Monday")
-    breakfast: MealReference | None = None
-    lunch: MealReference | None = None
-    dinner: MealReference | None = None
-    snacks: MealReference | None = None
+    breakfast: MealReference = Field(default_factory=MealReference)
+    lunch: MealReference = Field(default_factory=MealReference)
+    dinner: MealReference = Field(default_factory=MealReference)
+    snacks: MealReference = Field(default_factory=MealReference)
 
 
 class MealPlan(BaseModel):

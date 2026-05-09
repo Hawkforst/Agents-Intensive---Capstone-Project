@@ -1,17 +1,18 @@
-"""One-shot smoke test against qwen2.5:3b via Ollama.
+"""One-shot smoke test against the configured model.
 
-Sends a canned message that gives the orchestrator everything it needs
-to (potentially) walk through the full workflow. Prints every event so
-we can see exactly where things succeed or break.
+Modes:
+  Gemini (default):  .venv/bin/python scripts/smoke_test.py
+  Local Ollama:      .venv/bin/python scripts/smoke_test.py --local
 
-Run:
-    .venv/bin/python scripts/smoke_test.py
+Streams every agent event to stdout as it arrives, with timestamps.
 """
 
 from __future__ import annotations
 
 import asyncio
+import json
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -30,44 +31,62 @@ CANNED_MESSAGE = (
 )
 
 
-async def main() -> None:
-    runner = _build_runner(local=True)
+def _ts(start: float) -> str:
+    """Seconds since start, zero-padded to 6.2f."""
+    return f"{time.monotonic() - start:6.2f}s"
 
+
+def _truncate(value: str, limit: int = 400) -> str:
+    return value if len(value) <= limit else value[:limit] + f"  ... ({len(value) - limit} more chars)"
+
+
+def _log(start: float, msg: str, *, end: str = "\n") -> None:
+    print(f"[{_ts(start)}] {msg}", end=end, flush=True)
+
+
+async def main() -> None:
+    local_mode = "--local" in sys.argv
+    start = time.monotonic()
+
+    _log(start, f"Mode: {'Local Ollama' if local_mode else 'Gemini'}")
+    _log(start, "Building runner ...")
+    runner = _build_runner(local=local_mode)
+
+    _log(start, "Creating session ...")
     await runner.session_service.create_session(
-        app_name=APP_NAME,
-        user_id=USER_ID,
-        session_id=SESSION_ID,
+        app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID,
     )
 
-    print(f"USER: {CANNED_MESSAGE}\n")
-    print("=" * 80)
+    _log(start, "")
+    _log(start, "USER ▶ " + CANNED_MESSAGE)
+    _log(start, "─" * 80)
 
     message = types.Content(role="user", parts=[types.Part(text=CANNED_MESSAGE)])
 
     event_count = 0
     async for event in runner.run_async(
-        user_id=USER_ID,
-        session_id=SESSION_ID,
-        new_message=message,
+        user_id=USER_ID, session_id=SESSION_ID, new_message=message,
     ):
         event_count += 1
         author = getattr(event, "author", "?")
-        print(f"\n--- EVENT {event_count} (author={author}) ---")
+        header = f"EVENT {event_count:2} ({author})"
+        _log(start, header)
 
         if event.content and event.content.parts:
             for part in event.content.parts:
-                if hasattr(part, "text") and part.text:
-                    print(f"[TEXT] {part.text}")
-                if hasattr(part, "function_call") and part.function_call:
+                if getattr(part, "text", None):
+                    _log(start, f"  TEXT │ {_truncate(part.text)}")
+                if getattr(part, "function_call", None):
                     fc = part.function_call
-                    print(f"[TOOL CALL] {fc.name}({dict(fc.args) if fc.args else {}})")
-                if hasattr(part, "function_response") and part.function_response:
+                    args = dict(fc.args) if fc.args else {}
+                    _log(start, f"  CALL │ {fc.name}({_truncate(json.dumps(args, default=str), 300)})")
+                if getattr(part, "function_response", None):
                     fr = part.function_response
-                    response_str = str(fr.response)[:300]
-                    print(f"[TOOL RESPONSE] {fr.name} -> {response_str}")
+                    response_str = _truncate(json.dumps(fr.response, default=str), 300)
+                    _log(start, f"  RESP │ {fr.name} ⇒ {response_str}")
 
-    print("\n" + "=" * 80)
-    print(f"Total events: {event_count}")
+    _log(start, "─" * 80)
+    _log(start, f"Done. Total events: {event_count}")
 
 
 if __name__ == "__main__":

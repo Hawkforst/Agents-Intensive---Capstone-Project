@@ -12,19 +12,21 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 
 MODEL_MAP = {
-    "meal_orchestrator": "gemini-2.5-flash",
-    "meal_planner": "gemini-2.5-pro",
-    "ingredient_aggregator": "gemini-2.5-flash",
+    "meal_orchestrator": "gemini-2.5-flash-lite",
+    "meal_planner": "gemini-2.5-flash-lite",  # was 2.5-pro; flash to stay under free-tier RPM limits
+    "ingredient_aggregator": "gemini-2.5-flash-lite",
     "store_finder": "gemini-2.5-flash-lite",
-    "store_buyer": "gemini-2.5-flash",
+    "store_buyer": "gemini-2.5-flash-lite",
 }
 
 
 RETRY_CONFIG = types.HttpRetryOptions(
-    attempts=5,
-    exp_base=7,
+    attempts=3,
+    exp_base=2,
     initial_delay=1,
-    http_status_codes=[429, 500, 503, 504],
+    # Only retry on transient *server-side* failures. 429 means we are
+    # over quota — retrying just burns more quota and cascades the failure.
+    http_status_codes=[500, 503, 504],
 )
 
 

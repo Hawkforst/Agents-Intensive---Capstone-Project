@@ -26,18 +26,20 @@ SESSION_ID = "session_1"
 def _build_runner(local: bool = False) -> Runner:
     from shopaiholic.config import require_google_api_key
     from shopaiholic.agents import root_agent
-    from google.adk.plugins.reflect_retry_tool_plugin import ReflectAndRetryToolPlugin
 
     if local:
         _patch_agents_for_local()
     else:
         require_google_api_key()  # fail fast with a clear message
 
+    # NOTE: ReflectAndRetryToolPlugin is intentionally disabled while the free
+    # tier quota is tight — it amplifies 429 errors. Re-add for production:
+    #   from google.adk.plugins.reflect_retry_tool_plugin import ReflectAndRetryToolPlugin
+    #   plugins=[ReflectAndRetryToolPlugin()]
     return Runner(
         agent=root_agent,
         app_name=APP_NAME,
         session_service=InMemorySessionService(),
-        plugins=[ReflectAndRetryToolPlugin()],
     )
 
 
@@ -55,7 +57,7 @@ def _patch_agents_for_local() -> None:
     from shopaiholic.agents.meal_planner import meal_planner
     from shopaiholic.agents.store_finder import store_finder
 
-    model = LiteLlm(model="ollama/qwen2.5:3b")  # TEMP: revert to qwen3:8b once pulled
+    model = LiteLlm(model="ollama/qwen3:8b")
 
     for agent in [root_agent, meal_planner, store_finder]:
         agent.model = model
