@@ -1,9 +1,8 @@
 """Shared Pydantic models for inter-agent data contracts.
 
-Each sub-agent declares output_schema=<Model> so ADK enforces structured
-output, and output_key=<key> so the result is saved to session state
-automatically. The orchestrator reads from state rather than parsing
-free-text from the context window.
+Recipes, pantry items, and shopping list entries all share the same
+Ingredient shape so the deterministic aggregator can sum, subtract,
+and compare them with simple name normalisation.
 """
 
 from __future__ import annotations
@@ -12,32 +11,49 @@ from pydantic import BaseModel, Field
 
 
 # ---------------------------------------------------------------------------
+# Shared primitives
+# ---------------------------------------------------------------------------
+
+class Ingredient(BaseModel):
+    name: str = Field(description="Canonical ingredient name, lowercase, singular, no modifiers (e.g. 'chicken breast', 'rice', 'broccoli').")
+    quantity: float = Field(description="Numeric amount, e.g. 150.0")
+    unit: str = Field(description="Unit string: g, kg, ml, l, or 'each' for countable items")
+
+
+# ---------------------------------------------------------------------------
 # Meal Planner output
 # ---------------------------------------------------------------------------
 
+class MealReference(BaseModel):
+    """A single meal slot pointing to a known recipe."""
+    name: str = Field(description="Recipe display name, e.g. 'Spicy Chicken with Rice'")
+    recipe_id: str = Field(description="ID of the recipe in recipe_book or downloaded_recipes")
+
+
 class DayPlan(BaseModel):
     day: int = Field(description="Day number, e.g. 1 for Monday")
-    breakfast: str | None = Field(None, description="Breakfast meal name and brief description")
-    lunch: str | None = Field(None, description="Lunch meal name and brief description")
-    dinner: str | None = Field(None, description="Dinner meal name and brief description")
-    snacks: str | None = Field(None, description="Snack(s) for the day")
+    breakfast: MealReference | None = None
+    lunch: MealReference | None = None
+    dinner: MealReference | None = None
+    snacks: MealReference | None = None
 
 
 class MealPlan(BaseModel):
-    days: list[DayPlan] = Field(description="Ordered list of daily meal plans")
+    days: list[DayPlan]
 
 
 # ---------------------------------------------------------------------------
-# Ingredient Aggregator output
+# Aggregator output (shopping list)
 # ---------------------------------------------------------------------------
 
 class ShoppingItem(BaseModel):
-    ingredient: str = Field(description="Ingredient name, e.g. 'chicken breast'")
-    quantity: str = Field(description="Amount to buy, e.g. '1kg', '6 eggs', '2 x 500g pack'")
+    ingredient: str = Field(description="Canonical ingredient name")
+    quantity: float = Field(description="Target amount to buy (rounded up)")
+    unit: str = Field(description="Unit string")
 
 
 class ShoppingList(BaseModel):
-    shopping_list: list[ShoppingItem] = Field(description="Complete list of ingredients to buy")
+    shopping_list: list[ShoppingItem]
 
 
 # ---------------------------------------------------------------------------
@@ -45,32 +61,32 @@ class ShoppingList(BaseModel):
 # ---------------------------------------------------------------------------
 
 class Store(BaseModel):
-    name: str = Field(description="Store name, e.g. 'Albert'")
-    address: str = Field(description="Full store address string")
-    distance_km: float = Field(description="Distance from user address in kilometres")
+    name: str
+    address: str
+    distance_km: float
 
 
 class StoreList(BaseModel):
-    stores: list[Store] = Field(description="Nearby stores sorted by distance ascending")
+    stores: list[Store]
 
 
 # ---------------------------------------------------------------------------
-# Store Buyer output
+# Cheapest-store result
 # ---------------------------------------------------------------------------
 
 class PricedItem(BaseModel):
-    ingredient: str = Field(description="Ingredient name from the shopping list")
-    product: str = Field(description="Exact product name as found in the store")
-    price_eur: float = Field(description="Price in EUR for the chosen product")
+    ingredient: str
+    product: str
+    price_eur: float
 
 
 class StoreTotal(BaseModel):
-    name: str = Field(description="Store name")
-    address: str = Field(description="Store address")
-    total_eur: float = Field(description="Sum of cheapest available products for all ingredients")
+    name: str
+    address: str
+    total_eur: float
 
 
 class PriceResult(BaseModel):
-    cheapest_store: StoreTotal = Field(description="Store with the lowest total cost")
-    items: list[PricedItem] = Field(description="Line items for the cheapest store")
-    all_stores: list[StoreTotal] = Field(description="All stores ranked by total cost ascending")
+    cheapest_store: StoreTotal
+    items: list[PricedItem]
+    all_stores: list[StoreTotal]

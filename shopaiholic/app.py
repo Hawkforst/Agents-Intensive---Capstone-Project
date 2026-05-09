@@ -53,13 +53,11 @@ def _patch_agents_for_local() -> None:
     from google.adk.models.lite_llm import LiteLlm
     from shopaiholic.agents import root_agent
     from shopaiholic.agents.meal_planner import meal_planner
-    from shopaiholic.agents.ingredient_aggregator import ingredient_aggregator
     from shopaiholic.agents.store_finder import store_finder
-    from shopaiholic.agents.store_buyer import store_buyer
 
-    model = LiteLlm(model="ollama/qwen3:8b")
+    model = LiteLlm(model="ollama/qwen2.5:3b")  # TEMP: revert to qwen3:8b once pulled
 
-    for agent in [root_agent, meal_planner, ingredient_aggregator, store_finder, store_buyer]:
+    for agent in [root_agent, meal_planner, store_finder]:
         agent.model = model
 
 

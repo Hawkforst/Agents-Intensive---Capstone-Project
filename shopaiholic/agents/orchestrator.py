@@ -3,20 +3,21 @@ from google.adk.models.google_llm import Gemini
 from google.adk.tools.agent_tool import AgentTool
 
 from shopaiholic.config import MODEL_MAP, RETRY_CONFIG
-from shopaiholic.tools import food_storage, user_preferences
+from shopaiholic.tools import (
+    aggregate_shopping_list,
+    compute_cheapest_store,
+    food_storage,
+    user_preferences,
+)
 from shopaiholic.agents.meal_planner import meal_planner
-from shopaiholic.agents.ingredient_aggregator import ingredient_aggregator
 from shopaiholic.agents.store_finder import store_finder
-from shopaiholic.agents.store_buyer import store_buyer
 
 
-# Wrap each sub-agent as a tool. The orchestrator calls them like functions:
-# it stays in control, gets the validated Pydantic model back, and decides
-# what to do next. No transfer_to_agent, no fire-and-forget handoffs.
+# AgentTools wrap genuinely fuzzy sub-agents. Aggregator and store_buyer
+# are now pure Python tools — see shopaiholic/tools/aggregator.py and
+# shopaiholic/tools/cheapest_store.py.
 plan_meals = AgentTool(agent=meal_planner)
-aggregate_ingredients = AgentTool(agent=ingredient_aggregator)
 find_stores = AgentTool(agent=store_finder)
-compute_cheapest_store = AgentTool(agent=store_buyer)
 
 
 root_agent = LlmAgent(
@@ -35,7 +36,9 @@ STEP 1 — Preferences
 
 STEP 2 — Pantry
   - Call food_storage(action="retrieve") to load the pantry.
-  - If the user mentioned items at home, add them with food_storage(action="add").
+  - For each item the user mentioned at home, call
+    food_storage(action="add", name=..., quantity=..., unit=...).
+    Use canonical names (lowercase, singular, no modifiers).
   - If they want to skip, assume an empty pantry.
 
 STEP 3 — Meal plan
@@ -44,37 +47,40 @@ STEP 3 — Meal plan
   - Show the returned meal plan to the user in readable form. If they request
     changes, call plan_meals again with the change request.
 
-STEP 4 — Shopping list
-  - Call aggregate_ingredients(request=...) where `request` includes the
-    confirmed meal plan and the pantry list.
-  - Show the shopping list to the user. If they flag an allergen issue, return
-    to STEP 3.
+STEP 4 — Shopping list (deterministic)
+  - Call aggregate_shopping_list(meal_plan=..., pantry=..., allergies=...)
+    using the meal_plan from STEP 3 and the pantry from STEP 2.
+  - Show the shopping_list to the user. If skipped_for_allergy is non-empty,
+    flag it. If missing_recipe_ids is non-empty, return to STEP 3 — meal_planner
+    referenced an unknown recipe.
 
-STEP 5 — Stores
+STEP 5 — Stores and prices
   - Call find_stores(request="find supermarkets near the user").
-  - Then call compute_cheapest_store(request=...) where `request` includes
-    the shopping list and the list of stores returned in the previous step.
+  - Then call compute_cheapest_store(shopping_list=..., stores=...) using the
+    shopping_list from STEP 4 and the stores from find_stores.
   - Present the result like this:
+
         Shop: <name>, <address>
-        Total: <amount> <currency>
+        Total: <amount> EUR
         List:
           <ingredient> - <product> - <price>
           ...
-  - Ask the user to accept or pick another store.
+
+  - Ask the user to accept or pick another store from all_stores.
 
 STEP 6 — Wrap up
   - Confirm the choice and wish the user a good shopping trip.
 
 RULES:
-- Always call the tools in the order above. Do not skip steps.
+- Always call the tools in the order above.
 - Never recommend a product containing a user allergen.
-- Be concise in your messages — the user is busy.
+- Be concise — the user is busy.
 """,
     tools=[
         user_preferences,
         food_storage,
         plan_meals,
-        aggregate_ingredients,
+        aggregate_shopping_list,
         find_stores,
         compute_cheapest_store,
     ],

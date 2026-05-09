@@ -71,30 +71,37 @@ class LocalMemoryStore:
             self._save(data)
             return current
 
-    def get_pantry(self, user_id: str) -> list[str]:
+    def get_pantry(self, user_id: str) -> list[dict[str, Any]]:
+        """Returns list of {name, quantity, unit} dicts."""
         with self._lock:
             data = self._load()
         return list(data.get(user_id, {}).get("pantry", []))
 
-    def add_pantry(self, user_id: str, item: str) -> list[str]:
+    def add_pantry(self, user_id: str, name: str, quantity: float, unit: str) -> list[dict]:
+        """Add or top up a pantry item. If the same (name, unit) already
+        exists, the quantity is summed instead of duplicating the entry."""
         with self._lock:
             data = self._load()
             user = data.setdefault(user_id, {})
-            pantry = user.setdefault("pantry", [])
-            if item not in pantry:
-                pantry.append(item)
+            pantry: list[dict] = user.setdefault("pantry", [])
+            for entry in pantry:
+                if entry["name"] == name and entry["unit"] == unit:
+                    entry["quantity"] = float(entry["quantity"]) + float(quantity)
+                    break
+            else:
+                pantry.append({"name": name, "quantity": float(quantity), "unit": unit})
             self._save(data)
             return list(pantry)
 
-    def remove_pantry(self, user_id: str, item: str) -> list[str]:
+    def remove_pantry(self, user_id: str, name: str) -> list[dict]:
+        """Remove all entries for the given ingredient name."""
         with self._lock:
             data = self._load()
             user = data.setdefault(user_id, {})
-            pantry = user.setdefault("pantry", [])
-            if item in pantry:
-                pantry.remove(item)
+            pantry: list[dict] = user.setdefault("pantry", [])
+            user["pantry"] = [e for e in pantry if e["name"] != name]
             self._save(data)
-            return list(pantry)
+            return list(user["pantry"])
 
 
 memory_store = LocalMemoryStore()

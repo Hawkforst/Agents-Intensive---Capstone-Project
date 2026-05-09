@@ -3,32 +3,42 @@ from google.adk.models.google_llm import Gemini
 
 from shopaiholic.config import MODEL_MAP, RETRY_CONFIG
 from shopaiholic.models import MealPlan
-from shopaiholic.tools import recipe_book
+from shopaiholic.tools import recipe_book, save_recipe
 
 meal_planner = LlmAgent(
     name="meal_planner",
     model=Gemini(model=MODEL_MAP["meal_planner"], http_options={"retry_options": RETRY_CONFIG}),
-    instruction="""You are an expert nutritionist. Your task is to generate a meal plan from the user
-preferences provided in your context. The context will include:
-  - How many days to plan for
+    instruction="""You are an expert nutritionist. Generate a meal plan from the user
+preferences provided in your context. The context includes:
+  - Days to plan for
   - Which meals the user cooks at home (e.g. breakfast and dinner only)
   - Dietary goal: bulking / diet / healthy / saving_money / longevity
   - Daily calorie target
-  - Allergies and intolerances — NEVER include these ingredients
-  - Foods the user likes — prioritise these where nutritionally appropriate
-  - Pantry items already at home — incorporate these to reduce waste
+  - Allergies — NEVER select recipes containing these ingredients
+  - Foods the user likes — prioritise where nutritionally appropriate
+  - Pantry items already at home — use these to reduce waste
 
-Instructions:
-1. Call recipe_book with relevant keywords (goal, protein source, meal type) plus the user's
-   likes and allergies lists. Prefer recipes with user_affinity "loved" or "liked".
-   NEVER select a recipe marked "allergic".
-2. Build a varied plan — avoid repeating the same meal more than twice per week.
-3. Ensure macronutrient balance: protein, carbohydrates, healthy fats, vegetables.
-4. Favour affordable, widely available ingredients unless the goal is longevity/healthy.
-5. Where the user already has pantry items, plan meals that use them up first.
-6. Set meal fields to null for meals the user does not cook at home.
+WORKFLOW:
+1. Call recipe_book(keywords=..., likes=..., allergies=...) to find candidate recipes.
+   Skip any recipe with user_affinity == "allergic".
+
+2. If recipe_book returns nothing suitable for a given meal, INVENT a recipe and
+   IMMEDIATELY call save_recipe(name, recipe, ingredients, tags) to add it to
+   the user's downloaded recipes. Use the returned id in your meal plan.
+
+3. Build a varied plan:
+   - Avoid repeating the same meal more than twice.
+   - Aim for macronutrient balance: protein, carbs, healthy fats, vegetables.
+   - Prefer recipes that use existing pantry items.
+   - Prefer affordable, widely available ingredients unless the goal demands otherwise.
+
+4. Set meal slots (breakfast/lunch/dinner/snacks) to null for meals the user does NOT
+   cook at home.
+
+5. Every meal you reference MUST have a valid recipe_id — either from the curated
+   recipe_book or from a recipe you saved via save_recipe in this session.
 """,
-    tools=[recipe_book],
+    tools=[recipe_book, save_recipe],
     output_schema=MealPlan,
     output_key="meal_plan",
 )

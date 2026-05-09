@@ -96,20 +96,31 @@ def user_preferences(
 
 def food_storage(
     action: str,
-    item: str = "",
+    name: str = "",
+    quantity: float = 0.0,
+    unit: str = "",
     tool_context: ToolContext | None = None,
 ) -> dict[str, Any]:
     """Retrieve or update the user's food pantry.
 
     Args:
-        action: "retrieve" to list all items, "add" to add an item,
-                "remove" to remove an item.
-        item: Item string for "add"/"remove", e.g. "500g chicken breast".
+        action: "retrieve" to list all items, "add" to add/top up an item,
+                "remove" to remove all entries for an ingredient name.
+        name: Canonical ingredient name for "add"/"remove",
+              lowercase singular, e.g. "chicken breast".
+        quantity: Numeric amount for "add", e.g. 500.0.
+        unit: Unit string for "add", e.g. "g", "ml", "each".
         tool_context: Injected by ADK — do not pass manually.
 
     Returns:
-        retrieve: {"pantry": ["500g chicken", "2l milk", ...]}
+        retrieve: {"pantry": [{"name": "chicken breast", "quantity": 500.0, "unit": "g"}, ...]}
         add/remove: {"status": "added"/"removed", "pantry": [...]}
+
+    Examples:
+        food_storage(action="retrieve")
+        food_storage(action="add", name="chicken breast", quantity=500, unit="g")
+        food_storage(action="add", name="milk",            quantity=2,   unit="l")
+        food_storage(action="remove", name="chicken breast")
     """
     uid = _user_id(tool_context)
 
@@ -117,15 +128,15 @@ def food_storage(
         return {"pantry": memory_store.get_pantry(uid)}
 
     if action == "add":
-        if not item:
-            return {"error": "Provide an 'item' string to add."}
-        pantry = memory_store.add_pantry(uid, item)
+        if not name or not unit or quantity <= 0:
+            return {"error": "For 'add' provide name, quantity > 0, and unit."}
+        pantry = memory_store.add_pantry(uid, name.lower().strip(), float(quantity), unit.lower().strip())
         return {"status": "added", "pantry": pantry}
 
     if action == "remove":
-        if not item:
-            return {"error": "Provide an 'item' string to remove."}
-        pantry = memory_store.remove_pantry(uid, item)
+        if not name:
+            return {"error": "For 'remove' provide the ingredient name."}
+        pantry = memory_store.remove_pantry(uid, name.lower().strip())
         return {"status": "removed", "pantry": pantry}
 
     return {"error": f"Unknown action '{action}'. Use 'retrieve', 'add', or 'remove'."}
