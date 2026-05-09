@@ -42,14 +42,25 @@ def _build_runner(local: bool = False) -> Runner:
 
 
 def _patch_agents_for_local() -> None:
-    """Swap all agents to qwen2.5:3b via LiteLlm for offline testing."""
+    """Swap all agents to a local Ollama model via LiteLlm for offline testing.
+
+    Default: qwen3:8b — solid tool-calling on a 16GB Mac.
+    Alternatives (pull with `ollama pull <name>`):
+      - qwen2.5:7b                  : a touch smaller/faster, slightly weaker at tools
+      - qwen2.5:14b-instruct-q4_K_M : noticeably better reasoning, ~9GB RAM, slower
+      - qwen2.5:3b                  : minimum viable, struggles past ~4 tools
+    """
     from google.adk.models.lite_llm import LiteLlm
     from shopaiholic.agents import root_agent
+    from shopaiholic.agents.meal_planner import meal_planner
+    from shopaiholic.agents.ingredient_aggregator import ingredient_aggregator
+    from shopaiholic.agents.store_finder import store_finder
+    from shopaiholic.agents.store_buyer import store_buyer
 
-    qwen = LiteLlm(model="ollama/qwen2.5:3b")
+    model = LiteLlm(model="ollama/qwen3:8b")
 
-    for agent in [root_agent] + list(root_agent.sub_agents):
-        agent.model = qwen
+    for agent in [root_agent, meal_planner, ingredient_aggregator, store_finder, store_buyer]:
+        agent.model = model
 
 
 async def run_chat(local: bool = False) -> None:
