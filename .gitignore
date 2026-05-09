@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.shopaiholic/
+.ipynb_checkpoints/
+.DS_Store
